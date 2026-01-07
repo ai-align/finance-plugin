@@ -30,7 +30,7 @@ If you have cloned the repository:
 ```bash
 # 1. Add the local directory as a marketplace
 cd finance-plugin
-claude plugin marketplace add .
+claude plugin marketplace add ./
 
 # 2. Install the plugin
 claude plugin install finance-plugin@finance-marketplace
