@@ -1,0 +1,15 @@
+{
+    "name": "finance-marketplace",
+    "owner": {
+        "name": "ai-align",
+        "url": "https://github.com/ai-align"
+    },
+    "description": "Marketplace for Finance Plugin",
+    "plugins": [
+        {
+            "name": "finance-plugin",
+            "source": "./",
+            "description": "A specialized finance plugin for stock analysis and market insights."
+        }
+    ]
+}

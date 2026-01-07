@@ -13,25 +13,27 @@ The plugin includes a **Stock Analyzer** skill that enables Claude to:
 
 ## Installation
 
-You can install this plugin directly from the GitHub repository using the Claude Code CLI.
+To install this plugin, you must first add its marketplace, then install the plugin.
 
-### Option 1: Install via Git URL which created by Claude
+### Option 1: Install from GitHub
 ```bash
-claude plugin install https://github.com/ai-align/finance-plugin
+# 1. Add the marketplace
+claude plugin marketplace add https://github.com/ai-align/finance-plugin
+
+# 2. Install the plugin
+claude plugin install finance-plugin@finance-marketplace
 ```
 
-### Option 2: Clone and Install Locally
-If you prefer to clone the repository first:
+### Option 2: Install Locally (Development)
+If you have cloned the repository:
 
 ```bash
-# Clone the repository
-git clone https://github.com/ai-align/finance-plugin.git
-
-# Navigate to the directory
+# 1. Add the local directory as a marketplace
 cd finance-plugin
+claude plugin marketplace add .
 
-# Install the plugin from the current directory
-claude plugin install .
+# 2. Install the plugin
+claude plugin install finance-plugin@finance-marketplace
 ```
 
 
