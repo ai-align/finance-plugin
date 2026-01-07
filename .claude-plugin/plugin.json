@@ -1,0 +1,11 @@
+{
+  "name": "finance-plugin",
+  "version": "0.1.0",
+  "description": "A specialized finance plugin for stock analysis and market insights.",
+  "author": {
+    "name": "Ai Align",
+    "url": "https://github.com/ai-align"
+  },
+  "repository": "https://github.com/ai-align/finance-plugin",
+  "license": "MIT"
+}
