@@ -34,9 +34,19 @@ cd finance-plugin
 claude plugin install .
 ```
 
+
+## Requirements
+
+To use the Stock Analyzer script reliably, we recommend installing the python dependencies:
+
+```bash
+pip install -r skills/stock-analyzer/requirements.txt
+```
+
 ## Usage
 
 Once installed, the **Stock Analyzer** skill allows you to ask Claude financial questions such as:
 - "Analyze the recent performance of AAPL"
 - "Is TSLA a good buy right now based on technicals?"
 - "Compare the financials of Coke vs Pepsi"
+
