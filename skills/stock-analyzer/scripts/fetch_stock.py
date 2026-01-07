@@ -2,6 +2,9 @@ import sys
 import json
 import argparse
 from datetime import datetime
+import tempfile
+import os
+
 import pandas as pd
 
 def calculate_rsi(data, window=14):
@@ -12,10 +15,65 @@ def calculate_rsi(data, window=14):
     rs = gain / loss
     return 100 - (100 / (1 + rs))
 
+def generate_chart_image(ticker, hist, sma_50_col, sma_200_col):
+    """
+    Generates a candlestick chart with SMAs and returns the path to the temporary image file.
+    """
+    try:
+        import mplfinance as mpf
+        
+        # Prepare data frame for mplfinance
+        # It expects index to be DatetimeIndex and columns Open, High, Low, Close, Volume
+        df = hist.copy()
+        # Ensure capitalization matches what mpf expects
+        df.columns = [c.capitalize() for c in df.columns]
+        
+        # Add moving averages plots
+        add_plots = []
+        if sma_50_col in hist.columns and not hist[sma_50_col].isnull().all():
+             add_plots.append(mpf.make_addplot(hist[sma_50_col], color='orange', width=1.5))
+        if sma_200_col in hist.columns and not hist[sma_200_col].isnull().all():
+             add_plots.append(mpf.make_addplot(hist[sma_200_col], color='blue', width=1.5))
+        
+        # Create temp file
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        filename = f"{ticker}_{timestamp}_chart.png"
+        filepath = os.path.join(tempfile.gettempdir(), filename)
+        
+        # Plot
+        # style='yahoo' gives a familiar look
+        # volume=True adds volume bars
+        mpf.plot(
+            df, 
+            type='candle', 
+            style='yahoo', 
+            volume=True, 
+            addplot=add_plots, 
+            savefig=filepath,
+            title=f"{ticker} Price & Volume",
+            tight_layout=True
+        )
+        return filepath
+    except ImportError:
+        return "Error: mplfinance not installed"
+    except Exception as e:
+        return f"Error generating chart: {str(e)}"
+
+def analyze_sentiment(text):
+    """
+    Returns polarity (-1 to 1) and subjectivity (0 to 1).
+    """
+    try:
+        from textblob import TextBlob
+        blob = TextBlob(text)
+        return blob.sentiment.polarity, blob.sentiment.subjectivity
+    except ImportError:
+        return None, None
+
 def get_stock_data(ticker, period="1mo", interval="1d"):
     """
     Fetches stock data using yfinance.
-    Returns a dictionary with symbol, fundamentals, technicals, news, and history.
+    Returns symbol, fundamentals, technicals, news (with sentiment), history, and chat path.
     """
     try:
         import yfinance as yf
@@ -28,8 +86,6 @@ def get_stock_data(ticker, period="1mo", interval="1d"):
         stock = yf.Ticker(ticker)
         
         # 1. Fetch History & Calculate Technicals
-        # fetching a bit more data than requested to ensure MA/RSI have enough initial data
-        # Always fetch at least 2y to ensure SMA_200 is calculable
         extended_period = "5y" if period in ["5y", "max"] else "2y"
         hist = stock.history(period=extended_period, interval=interval, auto_adjust=True)
         
@@ -43,27 +99,22 @@ def get_stock_data(ticker, period="1mo", interval="1d"):
         hist['SMA_200'] = hist['Close'].rolling(window=200).mean()
         hist['RSI'] = calculate_rsi(hist['Close'])
 
-        # Filter back to requested period for output
+        # Slice for output/charting
         if period != "max":
-            # Approximation: slice the last N days based on period logic or just return the last 30/365 rows
-            # yfinance history(period=...) returns exactly that. 
-            # We re-fetch or just slice. Let's slice based on roughly the requested period size.
-            cutoff_date = pd.Timestamp.now() - pd.Timedelta(days=30 if period=="1mo" else 365)
-            # Simple approach: if they asked for 1mo, show last 22 trading days
-            if period == '1mo':
-                output_hist = hist.tail(22)
-            elif period == '5d':
-                 output_hist = hist.tail(5)
-            elif period == '3mo':
-                 output_hist = hist.tail(66)
-            elif period == '6mo':
-                 output_hist = hist.tail(132)
-            elif period == '1y':
-                 output_hist = hist.tail(252)
-            else:
-                 output_hist = hist
+            if period == '5d':   output_hist = hist.tail(5)
+            elif period == '1mo': output_hist = hist.tail(22)
+            elif period == '3mo': output_hist = hist.tail(66)
+            elif period == '6mo': output_hist = hist.tail(132)
+            elif period == '1y':  output_hist = hist.tail(252)
+            elif period == '2y':  output_hist = hist.tail(504)
+            elif period == '5y':  output_hist = hist.tail(1260)
+            else: output_hist = hist.tail(22) # fallback for 1mo or unknown
         else:
             output_hist = hist
+
+        # Generate Chart
+        # We use the sliced history for the chart for relevance
+        chart_path = generate_chart_image(ticker, output_hist, 'SMA_50', 'SMA_200')
 
         # Format history
         history_list = []
@@ -75,7 +126,6 @@ def get_stock_data(ticker, period="1mo", interval="1d"):
                 "low": round(row['Low'], 2),
                 "close": round(row['Close'], 2),
                 "volume": int(row['Volume']),
-                # Include calculated indicators in history if they exist
                 "sma_50": round(row['SMA_50'], 2) if pd.notnull(row['SMA_50']) else None,
                 "sma_200": round(row['SMA_200'], 2) if pd.notnull(row['SMA_200']) else None,
                 "rsi": round(row['RSI'], 2) if pd.notnull(row['RSI']) else None
@@ -103,13 +153,11 @@ def get_stock_data(ticker, period="1mo", interval="1d"):
             "beta": info.get("beta")
         }
 
-        # 3. Financials (Income Statement Highlights)
+        # 3. Financials
         fin_data = {}
         try:
-             # financials is a DataFrame
              financials = stock.financials
              if financials is not None and not financials.empty:
-                 # Get latest year column
                  latest_date = financials.columns[0]
                  fin_data = {
                      "reportDate": latest_date.strftime('%Y-%m-%d'),
@@ -117,41 +165,49 @@ def get_stock_data(ticker, period="1mo", interval="1d"):
                      "netIncome": int(financials.loc['Net Income'].iloc[0]) if 'Net Income' in financials.index else None,
                  }
         except Exception:
-            pass # Financials might fail or be missing
+            pass
 
-        # 4. News
+        # 4. News with Sentiment
         news_list = []
+        sentiment_scores = []
         try:
             raw_news = stock.news
             for item in raw_news[:5]:
-                # Handle nested structure (yfinance >= 0.2.x often has 'content')
-                content = item.get('content', item) # Fallback to item itself if no content
-                
+                content = item.get('content', item)
                 title = content.get('title')
                 pub_date = content.get('pubDate') or content.get('providerPublishTime')
                 
-                # Link might be in clickThroughUrl object
                 link = content.get('link')
                 if not link:
                     ctu = content.get('clickThroughUrl')
-                    if ctu:
-                         link = ctu.get('url')
+                    if ctu: link = ctu.get('url')
                 
-                # Publisher
                 publisher = content.get('publisher')
                 if not publisher:
                     prov = content.get('provider')
-                    if prov:
-                        publisher = prov.get('displayName')
+                    if prov: publisher = prov.get('displayName')
+                
+                # Sentiment Analysis
+                polarity, subjectivity = analyze_sentiment(title)
+                if polarity is not None:
+                     sentiment_scores.append(polarity)
 
                 news_list.append({
                     "title": title,
                     "publisher": publisher,
                     "link": link,
-                    "providerPublishTime": str(pub_date) if pub_date else None
+                    "providerPublishTime": str(pub_date) if pub_date else None,
+                    "sentiment": {
+                        "polarity": round(polarity, 2) if polarity is not None else None,
+                        "subjectivity": round(subjectivity, 2) if subjectivity is not None else None
+                    }
                 })
         except Exception:
             pass
+            
+        avg_sentiment = 0
+        if sentiment_scores:
+            avg_sentiment = sum(sentiment_scores) / len(sentiment_scores)
 
         return {
             "symbol": ticker.upper(),
@@ -159,6 +215,11 @@ def get_stock_data(ticker, period="1mo", interval="1d"):
             "fundamentals": fundamentals,
             "financials": fin_data,
             "technicals": technicals,
+            "chart": chart_path,
+            "news_sentiment": {
+                "average_polarity": round(avg_sentiment, 2),
+                "note": "Polarity ranges from -1 (Negative) to 1 (Positive)"
+            },
             "news": news_list,
             "history": history_list
         }
