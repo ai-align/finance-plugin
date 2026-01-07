@@ -1,41 +1,47 @@
 ---
-description: Specialized skill for financial stock analysis and market insights
-capabilities: ["stock analysis", "financial evaluation", "market trends"]
+description: Specialized skill for financial stock analysis, technicals, and market intelligence
+capabilities: ["stock analysis", "technical indicators", "financial data", "market news"]
 ---
 
 # Stock Analyzer
 
-A specialized skill designed to provide in-depth financial stock analysis. It includes a built-in script to fetch real-time market data to support your analysis.
+A specialized skill designed to provide in-depth financial stock analysis. It uses `yfinance` to fetch real-time market data, technical indicators, and news.
 
 ## Capabilities
-- **Data Retrieval**: Fetch real-time stock prices and historical data using the provided tool script.
-- **Technical Analysis**: Interpret technical indicators (Moving Averages, RSI, MACD) based on fresh data.
-- **Fundamental Analysis**: Evaluate financial health using balance sheets and income statements.
-- **Market Trends**: Analyze broader market movements and sector performance.
+- **Latest Data**: Recent price history with Open, High, Low, Close, Volume.
+- **Technical Analysis**: 
+    - **RSI (Relative Strength Index)**: Detect overbought (>70) or oversold (<30) conditions.
+    - **Moving Averages (SMA)**: 50-day and 200-day trends.
+- **Fundamental Insights**: Market Cap, PE Ratio, Dividend Yield.
+- **Financial Health**: Key metrics from Income Statement (Revenue, Net Income).
+- **Market Context**: Latest news headlines for the stock.
 
 ## Tools & Usage
 
-This skill includes a Python script to fetch stock data.
+This skill includes a Python script to fetch comprehensive stock data.
 
 ### How to fetch stock data
-When the user asks for analysis of a specific stock (e.g., "Analyze AAPL"), **you must first run the data fetching script** to get the latest prices.
+When the user asks for analysis of a specific stock (e.g., "Analyze AAPL", "Check RSI for TSLA"), **you must first run the data fetching script**.
 
 Run the following command:
 ```bash
 python3 ${CLAUDE_PLUGIN_ROOT}/skills/stock-analyzer/scripts/fetch_stock.py <TICKER>
 ```
-*Replace `<TICKER>` with the stock symbol (e.g., AAPL, TSLA).*
+*Optional arguments:*
+- `--period <1mo|6mo|1y|max>`: Time range for partial history (default: 1mo).
+- `--interval <1d|1wk|1mo>`: Candle interval (default: 1d).
 
 **Workflow:**
-1.  **Identify Ticker**: Extract the stock symbol from the user's request.
-2.  **Fetch Data**: Run the `fetch_stock.py` script.
-3.  **Analyze**: Parse the JSON output and perform your analysis (technical/fundamental) based on the returned data.
-4.  **Report**: Present the findings to the user, citing the current price and recent trends.
+1.  **Identify Intent**: Does the user want price action, technicals, or fundamental health?
+2.  **Fetch Data**: Run `fetch_stock.py`.
+3.  **Analyze**: 
+    - Check `technicals` for RSI and SMAs.
+    - Check `financials` for revenue growth.
+    - Check `news` for recent catalysts.
+4.  **Report**: Synthesize the data into a clear insight.
 
 ## Context and examples
-Use this skill when the user asks for:
-- "Analyze the recent performance of AAPL" -> *Run script for AAPL*
-- "How is Tesla doing today?" -> *Run script for TSLA*
-- "Compare the price movement of BTC-USD" -> *Run script for BTC-USD*
-
-This skill is best used for quantitative assessments supported by real data.
+- "Is AAPL overbought?" -> *Check RSI in output*
+- "How is Tesla's revenue growth?" -> *Check financials.totalRevenue*
+- "Why is NVDA dropping today?" -> *Check news section*
+- "Compare price vs 200-day MA" -> *Check history.close vs history.sma_200*
