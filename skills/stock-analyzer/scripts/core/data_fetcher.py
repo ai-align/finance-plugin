@@ -61,7 +61,7 @@ class DataFetcher:
             data = self._fetch_with_yfinance(ticker, period, interval)
             data['metadata']['cached'] = False
             data['metadata']['source'] = 'yfinance'
-            self.cache.set(cache_key, data)
+            self.cache.set(cache_key, data=data)
             return data
         except Exception as e:
             error_msg = str(e)
@@ -72,7 +72,7 @@ class DataFetcher:
             data = self._fetch_with_raw_api(ticker, period)
             data['metadata']['cached'] = False
             data['metadata']['source'] = 'yahoo_api'
-            self.cache.set(cache_key, data)
+            self.cache.set(cache_key, data=data)
             return data
         except Exception as fallback_e:
             # All sources failed
