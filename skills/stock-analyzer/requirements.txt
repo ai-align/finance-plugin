@@ -1,5 +1,4 @@
 yfinance>=0.2.48
 pandas>=2.0.0
-pandas-ta>=0.3.14
 mplfinance
 textblob
