@@ -1,0 +1,17 @@
+[
+    {
+        "ticker": "INTC",
+        "quantity": 100,
+        "cost_basis": 50.0
+    },
+    {
+        "ticker": "PFE",
+        "quantity": 50,
+        "cost_basis": 40.0
+    },
+    {
+        "ticker": "KO",
+        "quantity": 20,
+        "cost_basis": 60.0
+    }
+]

@@ -1,0 +1,5 @@
+[
+  {"ticker": "AAPL", "quantity": 10, "cost_basis": 150.0},
+  {"ticker": "MSFT", "quantity": 5, "cost_basis": 450.0},
+  {"ticker": "TSLA", "quantity": 20, "cost_basis": 400.0}
+]
